@@ -1,0 +1,72 @@
+# GitLab CI/CD Pipeline Configuration
+# codestats - lint, test and build
+
+# Shared organization CI template
+include:
+  - project: 'mm-plat-dev/GitCI-Toolkit'
+    file: '/templates/general-ci/default-template.yml'
+
+stages:
+  - linting
+  - test
+  - build
+
+# Linting
+
+linting:
+  stage: linting
+  extends: .linter-ci
+  variables:
+    YAML_YAMLLINT_DISABLE_ERRORS: 'true'
+    DISABLE_LINTERS: "COPYPASTE_JSCPD,REPOSITORY_TRIVY"
+  allow_failure: true
+
+
+# Testing
+
+python-cov-coverage:
+  stage: test
+  extends: .python-cov-coverage
+  before_script:
+    - pip install -r requirements.txt -r requirements-dev.txt
+    - pip install -e .
+
+
+python-junit:
+  stage: test
+  extends: .python-junit
+  before_script:
+    - pip install -r requirements.txt -r requirements-dev.txt
+    - pip install -e .
+
+
+# Build
+
+build:
+  stage: build
+  image: python:3.11
+
+  before_script:
+    - pip install -r requirements.txt -r requirements-dev.txt
+    - pip install build
+    - pip install -e .
+
+  script:
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        VERSION="${CI_COMMIT_TAG#v}"
+      else
+        BASE_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+        VERSION="${BASE_VERSION}+dev.${CI_COMMIT_SHORT_SHA}"
+      fi
+
+      sed -i "s/^version = .*/version = \"$VERSION\"/" pyproject.toml
+
+      echo "Building codestats $VERSION"
+
+    - python -m build
+  
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week

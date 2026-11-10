@@ -1,0 +1,83 @@
+
+Positional path
+Command	Meaning:
+
+codestats	Scan current directory (default)
+codestats .	Same, explicit
+codestats ..	Scan parent directory
+codestats ~/projects/myrepo	Absolute path via home shortcut (Linux/macOS/Git Bash)
+codestats /home/user/myrepo	Absolute Linux path
+codestats "C:\Users\me\myrepo"	Absolute Windows path (PowerShell/cmd)
+codestats "my project"	Path with a space — must be quoted
+codestats ./src	Scan just a subfolder of the current repo
+
+--exclude PATTERN (repeatable)
+Command	Meaning
+codestats . --exclude "tests/*"	Skip everything directly under tests/
+codestats . --exclude "**/tests/*"	Skip any tests/ folder at any depth
+codestats . --exclude "*.gen.py"	Skip generated files by name pattern
+codestats . --exclude "vendor/*"	Skip a vendored dependency folder
+codestats . --exclude "tests/*" --exclude "docs/*" --exclude "*.pb.go"	Multiple excludes — repeat the flag, each one ANDed as "skip if any match"
+
+
+
+Command	Meaning :
+codestats . --sort-by code	Default — sort/percentage by code-line count
+codestats . --sort-by lines	Sort by total lines (code+comment+blank)
+codestats . --sort-by files	Sort by number of files per language
+codestats . --sort-by comment	Sort by comment-line count — surfaces heavily-documented languages
+codestats . --sort-by blank	Sort by blank-line count
+codestats . --sort-by java	Rejected by argparse — not a valid choice, errors before running
+
+--json
+Command	Meaning:
+codestats . --json	JSON to stdout instead of a table (PDF still generated too, unless --no-pdf)
+codestats . --json --no-pdf	JSON only, nothing written to disk
+codestats . --json > report.json	Redirect JSON to a file (PDF note still goes to stderr, so stdout stays clean JSON)
+codestats . --json --sort-by lines	JSON output, but the underlying percentage basis is total lines instead of code lines
+
+--no-color
+Command	Meaning:
+
+codestats . --no-color	Strip ANSI codes from the bar chart
+codestats . --no-color > report.txt	Clean, colorless output redirected to a file
+codestats . --json --no-color	Harmless no-op combo — JSON never had color to begin with
+
+--no-bar
+Command	Meaning:
+codestats . --no-bar	Table only, no bar chart under it
+codestats . --no-bar --no-color	Plain table, no color, no bar — most "log-friendly" terminal output
+
+--pdf FILE
+Command	Meaning:
+codestats .	PDF written to default codestats_report.pdf in current directory
+codestats . --pdf Same as above — --pdf with no value uses the default filename
+codestats . --pdf myreport.pdf	Custom filename, current directory
+codestats . --pdf "reports/q3_scan.pdf"	Custom path — parent folder (reports/) must already exist
+codestats . --pdf "C:\Users\me\Desktop\scan.pdf"	Windows absolute output path
+codestats . --pdf out.pdf --sort-by lines	PDF table sorted/percentaged by total lines instead of code
+
+--no-pdf
+Command	Meaning :
+codestats . --no-pdf	Terminal output only, no PDF written at all
+codestats . --json --no-pdf	Pure JSON, no side effects on disk
+
+Realistic combined examples
+Command	Meaning
+codestats ~/projects/backend --exclude "tests/*" --sort-by lines --no-pdf	Quick terminal-only check of a backend repo, ignoring tests, sorted by total lines
+codestats . --no-git --exclude "vendor/*" --pdf audit.pdf	Full manual scan (including gitignored files) except vendored code, PDF saved as audit.pdf
+codestats "C:\repos\payment-service" --json --no-pdf --sort-by code	CI-style JSON-only check on Windows, no file output
+codestats . --exclude "*.pb.go" --exclude "*_test.go" --no-color --no-bar	Clean plain-text table excluding generated/test Go files, safe for log files
+codestats . --pdf "monthly_reports/2026_07.pdf" --sort-by files	Archive a monthly PDF snapshot sorted by file count per language
+-h / --help
+Command	Meaning
+codestats -h	Auto-generated help text listing every flag, then exits (no scan runs)
+codestats --help	Same
+Edge-case inputs worth knowing
+Input	What happens
+codestats /path/does/not/exist	error: Path does not exist: /path/does/not/exist — exit code 1
+codestats ./somefile.py (a file, not a folder)	error: Path is not a directory: ./somefile.py — exit code 1
+codestats "https://github.com/user/repo.git"	Treated as a nonexistent local path — clone it first, then point codestats at the local folder
+codestats . (empty directory)	No recognised source files found. — exit code 0, empty PDF still generated unless --no-pdf
+codestats . --pdf out.pdf where the reportlab package isn't installed	Terminal table still prints fine; a warning: about missing reportlab goes to stderr instead of crashing
+codestats . --sort-by lines --sort-by files (flag repeated)	Last one wins — files is used, since --sort-by isn't a repeatable flag (only --exclude is)

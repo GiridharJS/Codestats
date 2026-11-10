@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codestats"
+version = "0.1.0"
+description = "Command line tool to count lines of code (Java, Python, Go, Ruby, Rust, C, C++) and show language composition of a repo, with terminal and PDF output"
+requires-python = ">=3.8"
+readme = "README.md"
+dependencies = [
+    "reportlab>=4.0",
+]
+
+[project.scripts]
+codestats = "src.cli:main"
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
